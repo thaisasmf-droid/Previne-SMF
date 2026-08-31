@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Previne Niterói — Monitoramento SMF 2025–2026 (CGM)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1a2636; --muted:#6b7280; --line:#e4e7ec; --bg:#eef2f7;
+    --blue:#1565c0; --bluedark:#0d3b6e;
+    --orange:#e8611a; --orange-soft:#fcebe0;
+    --done:#2e7d32; --done-soft:#e4f2e5;
+    --prog:#e8a100; --prog-soft:#fbf3dc;
+    --cont:#1565c0; --cont-soft:#e3edf9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Calibri,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(135deg,#0d3b6e 0%,#1565c0 100%);color:#fff;padding:18px 32px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  header .brand{display:flex;align-items:center;gap:16px}
+  header img.logo{height:52px;width:auto;filter:brightness(0) invert(1)}
+  header h1{font-size:1.12rem;font-weight:700;line-height:1.3}
+  header .sub{font-size:.78rem;opacity:.78;margin-top:3px}
+  header .meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .hbadge{background:rgba(255,255,255,.15);padding:4px 14px;border-radius:20px;font-size:.75rem;white-space:nowrap}
+  header .meta span.info{font-size:.72rem;opacity:.75}
+  main{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+  .owner-bar{background:#fff;border-radius:10px;padding:14px 20px;margin:22px 0 14px;
+    box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid var(--blue)}
+  .owner-bar .lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:4px}
+  .owner-bar .val{font-size:1rem;font-weight:700;color:var(--bluedark)}
+  .owner-bar .desc{font-size:.78rem;color:#64748b;margin-top:3px}
+  .tabs{display:flex;gap:6px;margin:14px 0 18px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .tab{border:none;background:none;padding:10px 18px;font-size:14px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tab.active{color:var(--bluedark);border-bottom-color:var(--blue)}
+  .tab .n{background:#e2e8f0;border-radius:999px;padding:1px 8px;font-size:11.5px;margin-left:6px}
+  .tab.active .n{background:var(--blue);color:#fff}
+  .tabpane{display:none}
+  .tabpane.active{display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--bar,#94a3b8)}
+  .card .big{font-size:1.8rem;font-weight:800;line-height:1.1}
+  .card .lbl{font-size:.72rem;color:#94a3b8;margin-top:5px}
+  .alert{margin-top:14px;background:var(--orange-soft);border:1px solid #f3c9ae;border-radius:12px;padding:14px 16px;font-size:13.5px}
+  .alert b{color:var(--orange)}
+  .note{margin:0 0 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;font-size:12.8px;color:#1e40af}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+  .panel{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .panel h2{font-size:14px;margin-bottom:3px}
+  .panel .sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .panel.full{margin-top:14px}
+  .chartbox{position:relative;height:230px}
+  .chartbox.tall{height:260px}
+  .bars .row{margin-bottom:13px}
+  .bars .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;gap:8px}
+  .bars .pct{font-weight:700;white-space:nowrap}
+  .track{height:14px;border-radius:7px;background:#eef0f3;overflow:hidden;display:flex}
+  .seg{height:100%}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 12px;align-items:center}
+  .filters input{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+  .chip.active{background:var(--bluedark);color:#fff;border-color:var(--bluedark)}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
+  th{background:#f1f2f5;text-align:left;padding:10px 12px;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;position:sticky;top:0;z-index:1}
+  td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-done{background:var(--done-soft);color:var(--done)}
+  .b-prog{background:var(--prog-soft);color:#9a6b00}
+  .b-cont{background:var(--cont-soft);color:var(--cont)}
+  .count{font-size:12.5px;color:var(--muted);margin:8px 2px}
+  .wrap-table{overflow-x:auto;margin-top:6px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);max-height:560px;overflow-y:auto}
+  td.edit{background:#fffbe8;min-width:220px;outline:none}
+  td.edit:empty::before{content:'clique para preencher…';color:#b0b7c3;font-style:italic}
+  td.edit:focus{background:#fff3c4;box-shadow:inset 0 0 0 2px #e8a100}
+  .btn{background:var(--bluedark);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--blue)}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="logo" src="https://www.fazenda.niteroi.rj.gov.br/site/wp-content/uploads/2025/04/logo-2025.png"
+         alt="Secretaria Municipal de Fazenda de Niterói" onerror="this.style.display='none'">
+    <div>
+      <h1>Plano de Monitoramento Previne Niterói — Biênio 2025–2026</h1>
+      <div class="sub">Secretaria Municipal de Fazenda · Pilares I, II, II.II e III</div>
+    </div>
+  </div>
+  <div class="meta">
+    <span class="hbadge">64 ações pactuadas monitoradas</span>
+    <span class="info">📅 Data da medição: Agosto/2026</span>
+    <span class="info">🔄 Acompanhamento realizado em: 26/08/2026</span>
+  </div>
+</header>
+<main>
+  <div class="owner-bar">
+    <div class="lbl">Área detentora do dashboard</div>
+    <div class="val">Unidade de Controle Interno Setorial — UCIS/SMF</div>
+    <div class="desc">Responsável pelo acompanhamento das ações pactuadas do Previne Niterói no âmbito da Secretaria Municipal de Fazenda, consolidação de evidências e reporte à Controladoria Geral do Município (CGM).</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-t="geral">Visão geral</button>
+    <button class="tab" data-t="ea">Em andamento <span class="n">25</span></button>
+  </div>
+
+  <!-- ABA VISÃO GERAL -->
+  <div class="tabpane active" id="pane-geral">
+    <div class="cards" id="cards"></div>
+    <div class="alert"><b>Ponto de atenção:</b> o percentual entregue está em <b>60.9%</b> (39 de 64 ações) a quatro meses do fim do biênio. Restam <b>25 pendências, todas já em andamento</b> — nenhuma ação parada sem início —, concentradas nos Pilares II, II.II e III (o Pilar I está 100% entregue). Os cenários abaixo demonstram que as 80% são alcançáveis priorizando as ações mais encaminhadas.</div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Distribuição geral de status</h2>
+        <div class="sub">64 ações pactuadas</div>
+        <div class="chartbox"><canvas id="donut"></canvas></div>
+      </div>
+      <div class="panel bars">
+        <h2>Percentual entregue por eixo</h2>
+        <div class="sub">Entregue = concluídas + contínuas</div>
+        <div id="barsBox"></div>
+        <div class="legend">
+          <span><i class="dot" style="background:#2e7d32"></i>Concluído</span>
+          <span><i class="dot" style="background:#e8a100"></i>Em andamento</span>
+          <span><i class="dot" style="background:#1565c0"></i>Contínuo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel full">
+      <h2>Série histórica — percentual atingido × meta</h2>
+      <div class="sub">Jan–Jul/26 conforme acompanhamento UCIS · Ago/26 apurado em 13/08/2026</div>
+      <div class="chartbox tall"><canvas id="serie"></canvas></div>
+    </div>
+
+    <div class="panel full">
+      <h2>Referência gerencial de 80% — quanto falta e como chegar lá</h2>
+      <div class="sub">80% de 64 ações = 52 entregues · posição atual: 39 entregues (60.9%) · <b>faltam 13 ações</b></div>
+      <div class="grid2" style="margin-top:6px">
+        <div><div class="chartbox tall"><canvas id="cenarios"></canvas></div></div>
+        <div>
+          <div class="bars" id="cenList"></div>
+          <div class="alert" style="margin-top:12px"><b>Conclusão:</b> os três grupos de ações mais encaminhadas somam entregas suficientes para superar os 80%. Priorizando publicações de minutas, validação de evidências e capacitações já agendadas ou sem custo, a referência gerencial é alcançada. <i>Passe o mouse sobre as barras ou ⓘ para ver quais ações compõem cada grupo.</i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input id="q" type="search" placeholder="Buscar ação ou responsável…">
+      <button class="chip active" data-f="pilar" data-v="all">Todos os pilares</button>
+      <button class="chip" data-f="pilar" data-v="I">Pilar I</button>
+      <button class="chip" data-f="pilar" data-v="II">Pilar II</button>
+      <button class="chip" data-f="pilar" data-v="II.II">Pilar II.II</button>
+      <button class="chip" data-f="pilar" data-v="III">Pilar III</button>
+      <button class="chip active" data-f="status" data-v="all">Todos os status</button>
+      <button class="chip" data-f="status" data-v="Concluído">Concluído</button>
+      <button class="chip" data-f="status" data-v="Em andamento">Em andamento</button>
+      <button class="chip" data-f="status" data-v="Contínuo">Contínuo</button>
+      <button class="chip" data-f="status" data-v="pend">⚠ Somente pendências</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="wrap-table">
+      <table>
+        <thead><tr><th style="width:40px">Nº</th><th style="width:80px">Pilar</th><th>Ação pactuada</th><th style="width:170px">Responsável</th><th style="width:125px">Status</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ABA EM ANDAMENTO -->
+  <div class="tabpane" id="pane-ea">
+    <div class="note">💡 Relação das 25 ações em andamento — todas com execução iniciada e acompanhamento ativo pela UCIS/SMF.</div>
+    <div class="grid2" style="margin-top:0">
+      <div class="panel">
+        <h2>Onde estão as travas — categoria do gargalo</h2>
+        <div class="sub">25 ações em andamento</div>
+        <div class="chartbox"><canvas id="gargChart"></canvas></div>
+      </div>
+      <div class="panel bars">
+        <h2>Em andamento por pilar</h2>
+        <div class="sub">Distribuição das 25 ações</div>
+        <div id="eaByPilar"></div>
+        <div class="alert" style="margin-top:16px"><b>Leitura:</b> 9 ações dependem apenas da <b>publicação de minuta já elaborada</b>; 5 estão <b>praticamente concluídas</b> aguardando validação de evidência; 4 dependem de <b>capacitações sem custo ou já agendadas</b>. Outras 3 têm gargalo <b>orçamentário</b>. Completam o quadro: tramitação normativa (UCIS), PL no Executivo, execução interna, plano pendente de execução e 1 sem gargalo mapeado.</div>
+      </div>
+    </div>
+    <div class="toolbar"><div class="count" id="countEA" style="margin:0"></div></div>
+    <div class="wrap-table">
+      <table>
+        <thead><tr><th style="width:36px">Nº</th><th style="width:70px">Pilar</th><th>Ação pactuada</th><th style="width:170px">Responsável</th></tr></thead>
+        <tbody id="tbodyEA"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script>
+const A = [{"n": 1, "p": "I", "acao": "Divulgar Programa Nitnota Cidadã", "full": "Divulgar Programa Nitnota Cidadã", "resp": "ASPLAN", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 2, "p": "I", "acao": "Divulgar o Programa Bom Pagador", "full": "Divulgar o Programa Bom Pagador", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 3, "p": "I", "acao": "Elaborar o Plano Bianual da Fiscalização", "full": "Elaborar o Plano Bianual da Fiscalização", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 4, "p": "I", "acao": "Elaborar o Plano Bianual da Fiscalização", "full": "Elaborar o Plano Bianual da Fiscalização", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 5, "p": "I", "acao": "Elaborar Formulário Eletrônico de Processo (CAC)", "full": "Elaborar Formulário Eletrônico de Processo (CAC)", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 6, "p": "I", "acao": "Criar Jornada do Cidadão", "full": "Criar Jornada do Cidadão", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 7, "p": "I", "acao": "Prestar Contas de Término de Mandato", "full": "Prestar Contas de Término de Mandato", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 8, "p": "I", "acao": "Atualizar o cadastro do Sadipem para solicitação de garantia da União nas futuras operações de crédito", "full": "Atualizar o cadastro do Sadipem para solicitação de garantia da União nas futuras operações de crédito", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 9, "p": "I", "acao": "Criar Campanha IPTU 2025", "full": "Criar Campanha IPTU 2025", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 10, "p": "I", "acao": "Criar de Núcleo de Avaliação Imobiliária", "full": "Criar de Núcleo de Avaliação Imobiliária", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 11, "p": "I", "acao": "Criar da Comissão de Avaliação dos Contadores", "full": "Criar da Comissão de Avaliação dos Contadores", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 12, "p": "I", "acao": "Realizar Relátório de Análise Ergonômica do Trabalho", "full": "Realizar Relátório de Análise Ergonômica do Trabalho", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 13, "p": "I", "acao": "Elaborar Campanha Elas da SMF 2025", "full": "Elaborar Campanha Elas da SMF 2025", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 14, "p": "I", "acao": "Capacitar servidores no MBA em Auditoria Pública", "full": "Capacitar servidores no MBA em Auditoria Pública", "resp": "ASPLAN", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 1, "p": "II", "acao": "Elaborar/atualizar e publicar o Plano de Integridade Previne Niterói - referente ao biênio 2025/2026, visando fortalecer a cultura de integridade no órgão ou…", "full": "Elaborar/atualizar e publicar o Plano de Integridade Previne Niterói - referente ao biênio 2025/2026, visando fortalecer a cultura de integridade no órgão ou entidade.", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 2, "p": "II", "acao": "Demonstrar comprometimento da Alta Administração por meio da assinatura do Termo de Compromisso relativo à execução das ações de Integridade e Compliance do…", "full": "Demonstrar comprometimento da Alta Administração por meio da assinatura do Termo de Compromisso relativo à execução das ações de Integridade e Compliance do &quot;Previne Niterói&quot; (biênio 2025/2026), bem como participações, treinamentos e capacitações sobre temas ligados à integridade e compliance, evidenciando apoio manifesto na implementação e no fortalecimento da Cultura de Integridade e Compliance no ambiente do órgão/entidade do Município.", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 3, "p": "II", "acao": "Capacitar o(a) gestor(a) do órgão ou entidade por meio de curso com Certificação Internacional sobre Riscos (ISO 31.000), Antissuborno (ISO 37.001) ou Compli…", "full": "Capacitar o(a) gestor(a) do órgão ou entidade por meio de curso com Certificação Internacional sobre Riscos (ISO 31.000), Antissuborno (ISO 37.001) ou Compliance (ISO 37.301), com o objetivo de fortalecer a implementação de ações e boas práticas de governança corporativa e a cultura da Integridade e do Compliance.", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "PA 9900234035/2025 — aguardando retorno do Gabinete; gargalo atual é o orçamento", "cat": "Orçamento", "cen": ""}, {"n": 4, "p": "II", "acao": "Incentivar os integrantes da Rede de Controle Interno (RECONIT), Rede de Planejamento e Orçamento (PlaNit), Rede de Administradores do e-ciga, Rede de Agente…", "full": "Incentivar os integrantes da Rede de Controle Interno (RECONIT), Rede de Planejamento e Orçamento (PlaNit), Rede de Administradores do e-ciga, Rede de Agentes de Contratação, Rede de Contabilidade e outros servidores designados para exercer as atribuições de Fiscais de Contrato a se capacitarem, preferencialmente, através das “Jornadas de Certificação” da Escola de Governo e Gestão (EGG-Niterói) e em outras instituições: Escola de Contas e Gestão do TCE-RJ (ECG-TCE-RJ) e Escola Nacional de Administração Pública (ENAP)", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Capacitação dos fiscais de contrato ainda pendente — cursos da EGG e outros sem custo", "cat": "Capacitação pendente / agendada", "cen": "cap"}, {"n": 5, "p": "II", "acao": "Atualizar e divulgar tempestivamente em seu site oficial (caso tenha), informações relacionadas à administração de recursos humanos da instituição, da seguin…", "full": "Atualizar e divulgar tempestivamente em seu site oficial (caso tenha), informações relacionadas à administração de recursos humanos da instituição, da seguinte forma: relação nominal dos servidores; indicação de cargo e/ou função desempenhada pelo servidor; indicação da lotação por servidor.", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 6, "p": "II", "acao": "Gerenciar riscos em nível estratégico com base na Metodologia Previne: Gestão de Riscos e Controle englobando, no mínimo, as seguintes etapas: (I) Diagnóstic…", "full": "Gerenciar riscos em nível estratégico com base na Metodologia Previne: Gestão de Riscos e Controle englobando, no mínimo, as seguintes etapas: (I) Diagnóstico de ambiente interno e externo e fixação de objetivos; (II) Identificação e registro de riscos; (III) Análise dos riscos; (IV) Tratamento e monitoramento das propostas de ação e/ou contingências", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Processo não aberto; etapas da metodologia Previne ainda não elaboradas", "cat": "Execução interna (UCIS)", "cen": ""}, {"n": 7, "p": "II", "acao": "Fomentar a adesão de fornecedores dos órgãos e entidades da Prefeitura de Niterói à Política de Integridade e Compliance \"Previne Niterói\", garantindo a qual…", "full": "Fomentar a adesão de fornecedores dos órgãos e entidades da Prefeitura de Niterói à Política de Integridade e Compliance &quot;Previne Niterói&quot;, garantindo a qualidade e execução das contratações em conformidade com a Lei Federal nº 12.846/2013, a Lei Municipal nº 3.466 /2020 e o Decreto nº 14.235/2021.", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta da política de relação com fornecedores pendente de publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 8, "p": "II", "acao": "Acompanhar as determinações dos órgãos de Controle Externo, visando controlar o número de representações em face de editais de licitação de Niterói no TCE/RJ…", "full": "Acompanhar as determinações dos órgãos de Controle Externo, visando controlar o número de representações em face de editais de licitação de Niterói no TCE/RJ, bem como a quantidade de exames reiterados por aquele Tribunal, em atendimento aos riscos mais comuns levantados nas decisões da Corte de Contas.", "resp": "Guilherme Ferreira", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 9, "p": "II", "acao": "Responder todas as manifestações oriundas dos cidadãos através do canal de ouvidoria, visando atingir o percentual de 100% de respostas, cumprindo o prazo le…", "full": "Responder todas as manifestações oriundas dos cidadãos através do canal de ouvidoria, visando atingir o percentual de 100% de respostas, cumprindo o prazo legal.", "resp": "Guilherme Ferreira", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 10, "p": "II", "acao": ". Publicar Portaria atualizada contendo a relação dos titulares das Unidades de Controle Interno Setorial (UCIS) ou do Controle Interno (CI), sempre que houv…", "full": ". Publicar Portaria atualizada contendo a relação dos titulares das Unidades de Controle Interno Setorial (UCIS) ou do Controle Interno (CI), sempre que houver alteração, observando os critérios que garantem a transparência e a imparcialidade nas demandas da atividade de Controle Interno.", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 11, "p": "II", "acao": "Capacitar os setoriais de LGPD responsáveis pela aplicação da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados - LGPD), com o objetivo de assegurar a imple…", "full": "Capacitar os setoriais de LGPD responsáveis pela aplicação da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados - LGPD), com o objetivo de assegurar a implementação efetiva das diretrizes e obrigações previstas na legislação, promovendo a conformidade e a proteção de dados pessoais no âmbito do órgão ou entidade", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Capacitação marcada para agosto/2026", "cat": "Capacitação pendente / agendada", "cen": "cap"}, {"n": 12, "p": "II", "acao": "Participar dos encontros presenciais dos integrantes da Rede de Controle Interno Municipal (RECONIT), visando promover o alinhamento de procedimentos, o comp…", "full": "Participar dos encontros presenciais dos integrantes da Rede de Controle Interno Municipal (RECONIT), visando promover o alinhamento de procedimentos, o compartilhamento de boas práticas e a articulação de soluções conjuntas que promovam o controle e a prevenção de irregularidades.", "resp": "Guilherme Ferreira", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 13, "p": "II", "acao": "Elaborar e publicar Protocolo de Desligamento/Exoneração de servidores, visando o estabelecimento de diretrizes e procedimentos que garantam a conformidade c…", "full": "Elaborar e publicar Protocolo de Desligamento/Exoneração de servidores, visando o estabelecimento de diretrizes e procedimentos que garantam a conformidade com as normas vigentes.", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta da política elaborada, aguardando publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 14, "p": "II", "acao": "Realizar campanha interna de forma periódica para informar aspectos importantes sobre o Código de Ética e Integridade do Agente Público Municipal, Decreto Mu…", "full": "Realizar campanha interna de forma periódica para informar aspectos importantes sobre o Código de Ética e Integridade do Agente Público Municipal, Decreto Municipal nº 14.293/2022, divulgando conceitos fundamentais, princípios, deveres e vedações aos agentes públicos, combate ao assédio, relação com fornecedores, entre outros.", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Evidências já realizadas (palestras secretário e Procuradora em 23/03/2026) — validar conclusão", "cat": "Validar conclusão / evidência", "cen": "val"}, {"n": 1, "p": "II.II", "acao": "Efetuar o controle da destinação de recursos obtidos com a alienação de ativos.", "full": "Efetuar o controle da destinação de recursos obtidos com a alienação de ativos.", "resp": "Thiago/Guilherme", "st": "Em andamento", "g": "Minuta do PL enviada ao Gabinete do Prefeito (PA 9900203924/2024); aguarda movimentação do Executivo", "cat": "Decisão do Executivo (PL)", "cen": ""}, {"n": 1, "p": "III", "acao": "Implementar um Programa Permanente de Gestão do Comitê de Ética da Secretaria Municipal de Fazenda e atualizar a resolução do Comitê de Ética da SMF", "full": "Implementar um Programa Permanente de Gestão do Comitê de Ética da Secretaria Municipal de Fazenda e atualizar a resolução do Comitê de Ética da SMF", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta da política elaborada, aguardando publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 2, "p": "III", "acao": "Capacitar os servidores da SMF para o tratamento de dados em consonância com o Decreto Municipal", "full": "Capacitar os servidores da SMF para o tratamento de dados em consonância com o Decreto Municipal", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Capacitar quantitativo mínimo de servidores — curso EGG/ENAP sem custo", "cat": "Capacitação pendente / agendada", "cen": "cap"}, {"n": 3, "p": "III", "acao": "Capacitar e certificar os servidores da SMF em compliance", "full": "Capacitar e certificar os servidores da SMF em compliance", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Analistas da UCIS/SMF já capacitadas no biênio — validar conclusão", "cat": "Validar conclusão / evidência", "cen": "val"}, {"n": 4, "p": "III", "acao": "Capacitar e certificar os servidores da SMF em segurança da informação", "full": "Capacitar e certificar os servidores da SMF em segurança da informação", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Capacitar 1–2 servidores por subsecretaria — curso gratuito ENAP", "cat": "Capacitação pendente / agendada", "cen": "cap"}, {"n": 5, "p": "III", "acao": "Capacitar e certificar continuamente os servidores do Controle Interno Setorial da SMF", "full": "Capacitar e certificar continuamente os servidores do Controle Interno Setorial da SMF", "resp": "Guilherme Ferreira", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 6, "p": "III", "acao": "Elaborar Política Anticorrupção Fazendária", "full": "Elaborar Política Anticorrupção Fazendária", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 7, "p": "III", "acao": "Criar de um Código de Ética da SMF", "full": "Criar de um Código de Ética da SMF", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "PA 9900068334/2026 — minuta pronta, aguardando publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 8, "p": "III", "acao": "Criar um Guia de Boas Práticas para Contratação", "full": "Criar um Guia de Boas Práticas para Contratação", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta pronta, aguarda publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 9, "p": "III", "acao": "Criar e Implementar Plano de Monitoramento e Reporte ao Secretário de Fazenda envolvendo compliance, riscos e controle interno", "full": "Criar e Implementar Plano de Monitoramento e Reporte ao Secretário de Fazenda envolvendo compliance, riscos e controle interno", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 10, "p": "III", "acao": "Normatizar Programação Financeira e a ordem cronológica de pagamentos do Município criando calendário de pagamento", "full": "Normatizar Programação Financeira e a ordem cronológica de pagamentos do Município criando calendário de pagamento", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 11, "p": "III", "acao": "Aperfeiçoar o Fluxo de Cumprimento da Ordem Cronológica de Pagamento", "full": "Aperfeiçoar o Fluxo de Cumprimento da Ordem Cronológica de Pagamento", "resp": "Guilherme Ferreira/Salomão Neto e Francisco Marins", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 12, "p": "III", "acao": "Realizar o planejamento da Subsecretaria de Contabilidade, incluindo planos de desenvolvimento individual (PDI) dos novos contadores", "full": "Realizar o planejamento da Subsecretaria de Contabilidade, incluindo planos de desenvolvimento individual (PDI) dos novos contadores", "resp": "Thiago/Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 13, "p": "III", "acao": "Normatizar a UCIS/SMF", "full": "Normatizar a UCIS/SMF", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "PAs em tramitação: Regimento Interno da SMF, Resolução e Regulamento da UCIS", "cat": "Tramitação de PA / Normativo", "cen": ""}, {"n": 14, "p": "III", "acao": "14. Centralizar o BI (Business Intelligence) da Ouvidoria da SMF no Controle Interno e treinar os Ouvidores para tratamento da informação e manutenção do das…", "full": "14. Centralizar o BI (Business Intelligence) da Ouvidoria da SMF no Controle Interno e treinar os Ouvidores para tratamento da informação e manutenção do dashboard", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 15, "p": "III", "acao": "Criar e implementar Política de gestão de riscos Fazendária", "full": "Criar e implementar Política de gestão de riscos Fazendária", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta pronta, aguarda publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 16, "p": "III", "acao": "Elaborar Plano de Comunicação de Integridade e implementar", "full": "Elaborar Plano de Comunicação de Integridade e implementar", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "PA 9900074881/2026 — plano elaborado, pendente de execução", "cat": "Pendente de execução", "cen": ""}, {"n": 17, "p": "III", "acao": "Criar e Regulamentar a Comissão de Ouvidoria", "full": "Criar e Regulamentar a Comissão de Ouvidoria", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Pendente de publicação da regulamentação de ouvidoria", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 18, "p": "III", "acao": "Elaborar Política de Não Retaliação", "full": "Elaborar Política de Não Retaliação", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 19, "p": "III", "acao": "Transmitir as sessões do Conselho de Contribuintes através da sala híbrida de reuniões", "full": "Transmitir as sessões do Conselho de Contribuintes através da sala híbrida de reuniões", "resp": "Guilheme Ferreira/ Carlos Mauro", "st": "Em andamento", "g": "", "cat": "Não informado", "cen": ""}, {"n": 20, "p": "III", "acao": "Realizar ação de Sigilo Fiscal", "full": "Realizar ação de Sigilo Fiscal", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 21, "p": "III", "acao": "Conceder Treinamento específico aos Ouvidores", "full": "Conceder Treinamento específico aos Ouvidores", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 22, "p": "III", "acao": "Prever na legislação os critérios técnicos e objetivos para a seleção dos conselheiros representantes da sociedade civil no Conselho de Contribuintes.", "full": "Prever na legislação os critérios técnicos e objetivos para a seleção dos conselheiros representantes da sociedade civil no Conselho de Contribuintes.", "resp": "Carlos Maruro", "st": "Concluído", "g": "Aguardando evidência", "cat": "", "cen": "val"}, {"n": 23, "p": "III", "acao": "Criar Biblioteca Interna de Integridade e Controle", "full": "Criar Biblioteca Interna de Integridade e Controle", "resp": "Guilherme Ferreira", "st": "Contínuo", "g": "", "cat": "", "cen": ""}, {"n": 24, "p": "III", "acao": "Implementar o Insulamento de conjuntos de processos específicos dentro da UCIS no e-ciga por meio de grupo", "full": "Implementar o Insulamento de conjuntos de processos específicos dentro da UCIS no e-ciga por meio de grupo", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 25, "p": "III", "acao": "Instalar a UCIS em sala reservada", "full": "Instalar a UCIS em sala reservada", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 26, "p": "III", "acao": "Estudar o Insulamento dos Dados em tratamento na UCIS", "full": "Estudar o Insulamento dos Dados em tratamento na UCIS", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 27, "p": "III", "acao": "Estudar a viabilidade para uma Corregedoria Fazendária", "full": "Estudar a viabilidade para uma Corregedoria Fazendária", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 28, "p": "III", "acao": "Regulamentar o uso de câmeras e do nível de acesso", "full": "Regulamentar o uso de câmeras e do nível de acesso", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta da portaria pronta, pendente de publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 29, "p": "III", "acao": "Regulamentar e Treinar a abertura de processos", "full": "Regulamentar e Treinar a abertura de processos", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Portaria 058/2023, Manual SEI e certificado disponíveis — validar conclusão", "cat": "Validar conclusão / evidência", "cen": "val"}, {"n": 30, "p": "III", "acao": "Implementar o uso de software para mitigação de fraudes em contratações públicas e Software de Compliance (D.D)", "full": "Implementar o uso de software para mitigação de fraudes em contratações públicas e Software de Compliance (D.D)", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "PA 9900175289/2025 — gargalo: questão orçamentária", "cat": "Orçamento", "cen": ""}, {"n": 31, "p": "III", "acao": "Elaborar Diagnóstico Interno de Integridade (Método QSA)", "full": "Elaborar Diagnóstico Interno de Integridade (Método QSA)", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Sem informação disponível", "cat": "Não informado", "cen": ""}, {"n": 32, "p": "III", "acao": "Classificar dados da SMF", "full": "Classificar dados da SMF", "resp": "Guilherme Ferreira", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 33, "p": "III", "acao": "Consolidar as normas de licitações por IN", "full": "Consolidar as normas de licitações por IN", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Minuta do manual de compras pronta, pendente de publicação", "cat": "Processo parado e/ou aguardando movimentação", "cen": "pub"}, {"n": 34, "p": "III", "acao": "Criar “Termo de Sigilo” para os integrantes da área visando aumentar o compromisso profissional e a consciência sobre a responsabilidade da atuação na UCIS", "full": "Criar “Termo de Sigilo” para os integrantes da área visando aumentar o compromisso profissional e a consciência sobre a responsabilidade da atuação na UCIS", "resp": "Guilherme Ferreira/Rena Gusmão", "st": "Concluído", "g": "", "cat": "", "cen": ""}, {"n": 35, "p": "III", "acao": "Aplicar o Sistema de Gestão da Qualidade (SGQ) por meio da certificação ISO 9001:2015 da SUMOG e da SSCONT bem como a manutenção dos setores já certificados.", "full": "Aplicar o Sistema de Gestão da Qualidade (SGQ) por meio da certificação ISO 9001:2015 da SUMOG e da SSCONT bem como a manutenção dos setores já certificados.", "resp": "Guilherme Ferreira", "st": "Em andamento", "g": "Em contratação, fase de elaboração do TR (PA 9900153702/2025) — gargalo: orçamento", "cat": "Orçamento", "cen": ""}];
+const STATUS_ORDER=["Concluído","Em andamento","Contínuo"];
+const COLORS={"Concluído":"#2e7d32","Em andamento":"#e8a100","Contínuo":"#1565c0"};
+const BADGE={"Concluído":"b-done","Em andamento":"b-prog","Contínuo":"b-cont"};
+const PILAR_NAMES={"I":"Pilar I — Gestão Fazendária","II":"Pilar II — Integridade","II.II":"Pilar II.II — Alienação","III":"Pilar III — Ações estruturantes"};
+const CAT_COLORS={
+  "Processo parado e/ou aguardando movimentação":"#e8611a",
+  "Validar conclusão / evidência":"#2e7d32",
+  "Orçamento":"#c62828",
+  "Capacitação pendente / agendada":"#1565c0",
+  "Tramitação de PA / Normativo":"#7c3aed",
+  "Decisão do Executivo (PL)":"#0f766e",
+  "Pendente de execução":"#b45309",
+  "Execução interna (UCIS)":"#475569",
+  "Não informado":"#cbd5e1"
+};
+
+function tally(rows){const t={};STATUS_ORDER.forEach(s=>t[s]=0);rows.forEach(r=>t[r.st]=(t[r.st]||0)+1);return t;}
+const all=tally(A);
+const byP={};["I","II","II.II","III"].forEach(p=>byP[p]=tally(A.filter(r=>r.p===p)));
+const nByP={};["I","II","II.II","III"].forEach(p=>nByP[p]=A.filter(r=>r.p===p).length);
+const pct=(n,d)=>(100*n/d).toLocaleString("pt-BR",{maximumFractionDigits:1});
+const entregue=t=>(t["Concluído"]||0)+(t["Contínuo"]||0);
+
+// abas
+let gargInit=false;
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tabpane").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById("pane-"+b.dataset.t).classList.add("active");
+  if(b.dataset.t==="ea"&&!gargInit){gargInit=true;buildGargChart();}
+}));
+
+// KPI cards
+const pend=all["Em andamento"]||0;
+const tot64=64,ent=entregue(all);
+document.getElementById("cards").innerHTML=`
+  <div class="card" style="--bar:#0d3b6e"><div class="big">64</div><div class="lbl">ações pactuadas no biênio</div></div>
+  <div class="card" style="--bar:#2e7d32"><div class="big" style="color:#2e7d32">${pct(ent,64)}%</div><div class="lbl">entregues (${ent} de 64 — concluídas + contínuas)</div></div>
+  <div class="card" style="--bar:#e8a100"><div class="big" style="color:#b57f00">${pend}</div><div class="lbl">em andamento</div></div>
+  <div class="card" style="--bar:#e8611a"><div class="big" style="color:#e8611a">${pend}</div><div class="lbl">pendências para dez/2026</div></div>`;
+
+// donut
+new Chart(document.getElementById("donut"),{
+  type:"doughnut",
+  data:{labels:STATUS_ORDER.map(s=>`${s} (${all[s]||0})`),
+    datasets:[{data:STATUS_ORDER.map(s=>all[s]||0),backgroundColor:STATUS_ORDER.map(s=>COLORS[s]),borderColor:"#fff",borderWidth:2}]},
+  options:{maintainAspectRatio:false,cutout:"62%",
+    plugins:{legend:{position:"right",labels:{boxWidth:12,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>` ${c.label}: ${pct(c.parsed,64)}%`}}}}
+});
+
+// barras por eixo
+function barRow(name,t,total){
+  const e=entregue(t);
+  let segs="";
+  STATUS_ORDER.forEach(s=>{if((t[s]||0)>0)segs+=`<div class="seg" style="width:${100*(t[s]||0)/total}%;background:${COLORS[s]}" title="${s}: ${t[s]||0}"></div>`;});
+  return `<div class="row"><div class="top"><span>${name} (${total})</span><span class="pct" style="color:${e/total>=.7?"#2e7d32":"#c62828"}">${pct(e,total)}% entregue</span></div><div class="track">${segs}</div></div>`;
+}
+document.getElementById("barsBox").innerHTML=
+  barRow(PILAR_NAMES["I"],byP["I"],nByP["I"])+
+  barRow(PILAR_NAMES["II"],byP["II"],nByP["II"])+
+  barRow(PILAR_NAMES["II.II"],byP["II.II"],nByP["II.II"])+
+  barRow(PILAR_NAMES["III"],byP["III"],nByP["III"])+
+  barRow("Total do biênio",all,64);
+
+// série histórica
+new Chart(document.getElementById("serie"),{
+  type:"line",
+  data:{labels:["jan/26","fev/26","mar/26","abr/26","mai/26","jun/26","jul/26","ago/26"],
+    datasets:[
+      {label:"Percentual atingido",data:[47,47,50,50,50,52,58,60.9],borderColor:"#1565c0",backgroundColor:"rgba(21,101,192,.10)",fill:true,tension:.3,pointRadius:5,pointBackgroundColor:"#1565c0"},
+      {label:"Meta (100%)",data:[100,100,100,100,100,100,100,100],borderColor:"#c62828",borderDash:[6,6],pointRadius:0,fill:false}
+    ]},
+  options:{maintainAspectRatio:false,
+    scales:{y:{min:0,max:110,ticks:{callback:v=>v+"%"}}},
+    plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}}}
+});
+
+// cenários
+(function(){
+  const pubs=A.filter(r=>r.cen==="pub");
+  const vals=A.filter(r=>r.cen==="val");
+  const caps=A.filter(r=>r.cen==="cap");
+  const base=39,tot=64;
+  const p=v=>Math.round(1000*v/tot)/10;
+  const cA=base+pubs.length,cB=cA+vals.length,cC=cB+caps.length;
+  const shortName=r=>{let t=r.acao.replace(/&quot;/g,'"');if(t.length>85)t=t.slice(0,82).trimEnd()+"…";return `${r.p}-${r.n} · ${t}`;}
+  const listOf=g=>g.map(shortName);
+  const GROUPS={1:{nome:"Publicações de minutas",acoes:listOf(pubs)},
+                 2:{nome:"Validação de evidências",acoes:listOf(vals)},
+                 3:{nome:"Capacitações agendadas/sem custo",acoes:listOf(caps)}};
+  const labels=["Posição atual","Cenário 1\n+ minutas ("+pubs.length+")","Cenário 2\n+ validações ("+vals.length+")","Cenário 3\n+ capacitações ("+caps.length+")"];
+  new Chart(document.getElementById("cenarios"),{
+    data:{labels:labels,datasets:[
+      {type:"bar",label:"% entregue",data:[p(base),p(cA),p(cB),p(cC)],backgroundColor:["#94a3b8","#e8611a","#e8a100","#2e7d32"],borderRadius:6},
+      {type:"line",label:"Referência 80%",data:[80,80,80,80],borderColor:"#c62828",borderDash:[6,6],pointRadius:0}
+    ]},
+    options:{maintainAspectRatio:false,
+      scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"}},x:{ticks:{font:{size:10.5},callback:function(v){const l=this.getLabelForValue(v);return l.split("\n");}}}},
+      plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:12}}},
+        tooltip:{callbacks:{
+          label:c=>` ${c.dataset.label}: ${c.parsed.y}%`,
+          afterBody:items=>{const i=items[0].dataIndex;if(i===0||items[0].dataset.type==="line")return[];const g=GROUPS[i];return["","Grupo: "+g.nome,...g.acoes.map(a=>"• "+a)];}
+        },bodyFont:{size:11},boxPadding:4}}}
+  });
+  const titleOf=g=>("Ações do grupo:\n"+g.map(a=>"• "+a).join("\n")).replace(/"/g,"&quot;");
+  const li=(t,n,pctv,color,tit)=>`<div class="row" ${tit?`title="${tit}" style="cursor:help"`:""}>
+    <div class="top"><span>${t}${tit?' <span style="color:#94a3b8">ⓘ</span>':''}</span><span class="pct" style="color:${color}">${n} entregues → ${pctv}%</span></div>
+    <div class="track"><div class="seg" style="width:${pctv}%;background:${color}"></div></div></div>`;
+  document.getElementById("cenList").innerHTML=
+    li("Posição atual ("+base+" de 64)",base,p(base),"#94a3b8","")+
+    li("Cenário 1 — publicar as "+pubs.length+" minutas prontas",cA,p(cA),"#e8611a",titleOf(listOf(pubs)))+
+    li("Cenário 2 — + validar as "+vals.length+" ações praticamente concluídas",cB,p(cB),"#e8a100",titleOf(listOf(vals)))+
+    li("Cenário 3 — + "+caps.length+" capacitações (agendadas/sem custo)",cC,p(cC),"#2e7d32",titleOf(listOf(caps)));
+})();
+
+// tabela geral + filtros
+let fPilar="all",fStatus="all",q="";
+function render(){
+  const rows=A.filter(r=>{
+    if(fPilar!=="all"&&r.p!==fPilar)return false;
+    if(fStatus==="pend"){if(r.st!=="Em andamento")return false;}
+    else if(fStatus!=="all"&&r.st!==fStatus)return false;
+    if(q&&!(r.full.toLowerCase().includes(q)||r.resp.toLowerCase().includes(q)))return false;
+    return true;
+  });
+  const t=tally(rows);
+  document.getElementById("tbody").innerHTML=rows.map(r=>{
+    const b=BADGE[r.st]||"b-prog";
+    return `<tr><td>${r.n}</td><td>Pilar ${r.p}</td><td title="${r.full}">${r.acao}</td><td>${r.resp}</td><td><span class="badge ${b}">${r.st}</span></td></tr>`;
+  }).join("")||`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Nenhuma ação encontrada.</td></tr>`;
+  document.getElementById("count").textContent=`${rows.length} ação(ões) · ${t["Concluído"]||0} concluída(s) · ${t["Em andamento"]||0} em andamento · ${t["Contínuo"]||0} contínua(s)`;
+}
+document.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{
+  const f=b.dataset.f,v=b.dataset.v;
+  document.querySelectorAll(`.chip[data-f="${f}"]`).forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  if(f==="pilar")fPilar=v;else fStatus=v;
+  render();
+}));
+document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase();render();});
+render();
+
+// aba EA
+function buildGargChart(){
+  const eas=A.filter(r=>r.st==="Em andamento");
+  const cats={};eas.forEach(r=>{cats[r.cat]=(cats[r.cat]||0)+1;});
+  const order=Object.entries(cats).sort((a,b)=>{if(a[0]==="Não informado")return 1;if(b[0]==="Não informado")return -1;return b[1]-a[1];});
+  new Chart(document.getElementById("gargChart"),{
+    type:"bar",
+    data:{labels:order.map(o=>o[0]),datasets:[{data:order.map(o=>o[1]),backgroundColor:order.map(o=>CAT_COLORS[o[0]]||"#e8611a"),borderRadius:5}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,scales:{x:{ticks:{precision:0}}},plugins:{legend:{display:false}}}
+  });
+  const eas2=A.filter(r=>r.st==="Em andamento");
+  const t2=tally(eas2.filter(r=>r.p==="II")),t3=tally(eas2.filter(r=>r.p==="III")),tIII=tally(eas2.filter(r=>r.p==="II.II"||r.p==="II"));
+  document.getElementById("eaByPilar").innerHTML=
+    ["II","II.II","III"].map(p=>{const rows=eas2.filter(r=>r.p===p);if(!rows.length)return"";const n=rows.length;return`<div class="row"><div class="top"><span>${PILAR_NAMES[p]}</span><span class="pct" style="color:#9a6b00">${n} ação(ões)</span></div><div class="track"><div class="seg" style="width:${100*n/eas2.length}%;background:#e8a100"></div></div></div>`;}).join("");
+  const mapped=eas2.filter(r=>r.g).length;
+  document.getElementById("countEA").textContent=`${eas2.length} ações em andamento · ${mapped} com gargalo mapeado`;
+  document.getElementById("tbodyEA").innerHTML=eas2.map(r=>
+    ('<tr><td>'+r.n+'</td><td>Pilar '+r.p+'</td><td title="'+r.full+'">'+r.acao+'</td><td>'+r.resp+'</td><td class="edit" contenteditable="true" data-k="'+r.p+'|'+r.n+'|g">'+r.g+'</td></tr>')
+  ).join("");
+}
+
+function exportCSV(){
+  const eas=A.filter(r=>r.st==="Em andamento");
+  const getEdit=(p,n)=>{const el=document.querySelector(`[data-k="${p}|${n}|g"]`);return el?el.textContent.trim():"";}
+  const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  let csv="Nº;Pilar;Ação;Responsável;Gargalo identificado\n";
+  eas.forEach(r=>{csv+=[r.n,"Pilar "+r.p,r.full.replace(/&quot;/g,'"'),r.resp,getEdit(r.p,r.n)].map(esc).join(";")+"\n";});
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="gargalos_em_andamento.csv";a.click();URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
